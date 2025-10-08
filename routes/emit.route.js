@@ -1,24 +1,34 @@
-// routes/emit.route.js (broadcast, không room)
-import { Router } from 'express'
+// routes/emit.route.js
+// ------------------------------------------------------------
+// Endpoint đơn giản để broadcast sự kiện ra tất cả client.
+// Có tuỳ chọn xác thực bằng ADMIN_API_KEY (header x-api-key).
+// ------------------------------------------------------------
+
+import { Router } from 'express';
+import { log } from '../utils/logger.js';
 
 export const emitRouter = (io) => {
-    const r = Router()
+    const r = Router();
+
+    // (Tuỳ chọn) Bảo vệ bằng x-api-key
     r.use((req, res, next) => {
-        // Tuỳ chọn bảo vệ bằng x-api-key (khuyên dùng)
-        const requiredKey = process.env.ADMIN_API_KEY
-        if (!requiredKey) return next()
+        const requiredKey = process.env.ADMIN_API_KEY;
+        if (!requiredKey) return next();
         if (req.headers['x-api-key'] !== requiredKey) {
-            return res.status(401).json({ ok: false, error: 'Invalid API key' })
+            log.warn('emit', null, 'reject invalid api key from %s', req.ip);
+            return res.status(401).json({ ok: false, error: 'Invalid API key' });
         }
-        next()
-    })
+        next();
+    });
 
+    // Broadcast
     r.post('/', (req, res) => {
-        const { event, payload } = req.body || {}
-        if (!event) return res.status(400).json({ ok: false, error: 'Missing "event"' })
-        io.emit(event, payload) // <— BROADCAST tới tất cả client
-        return res.json({ ok: true })
-    })
+        const { event, payload } = req.body || {};
+        if (!event) return res.status(400).json({ ok: false, error: 'Missing "event"' });
+        log.info('emit', null, 'broadcast event=%s payloadKeys=%o', event, payload ? Object.keys(payload) : []);
+        io.emit(event, payload);
+        return res.json({ ok: true });
+    });
 
-    return r
-}
+    return r;
+};
