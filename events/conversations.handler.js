@@ -5,7 +5,7 @@
 // - conv:get       -> trả danh sách ban đầu + bật poll upsert patch
 // - conv:loadMore  -> lấy thêm + emit patch upsert (và restart poll theo current_count mới)
 // - conv:search    -> search theo tên (ACK)
-// - msg:get        -> lấy messages 1 lần (ACK)
+// - msg:get        -> lấy messages 1 lần (ACK)  **HỖ TRỢ count để load-more**
 // - msg:watchStart -> bật poll messages cho 1 hội thoại, phát 'msg:new' khi có tin mới
 // - msg:watchStop  -> dừng poll cho hội thoại đang theo dõi
 // ------------------------------------------------------------
@@ -141,6 +141,8 @@ export function registerConversationEvents(io, socket) {
 
     // ===== Messages =====
     socket.on('msg:get', async (params, ack) => {
+        console.log(params, ack);
+
         const { pageId, token, conversationId, customerId } = params || {};
         let { count } = params || {};
         count = Number.isFinite(Number(count)) ? Number(count) : 0;
@@ -150,7 +152,6 @@ export function registerConversationEvents(io, socket) {
             return typeof ack === 'function' && ack({ ok: false, error: 'missing pageId/token/conversationId' });
         }
         try {
-            // API yêu cầu convoKey (sau dấu "_"), nên đảm bảo normalize
             const convoKey = extractConvoKey(conversationId);
             const items = await getMessages({ pageId, token, conversationId: convoKey, customerId, count });
             log.info('msg', socket.id, 'msg:get fetched=%d', Array.isArray(items) ? items.length : -1);
@@ -173,7 +174,6 @@ export function registerConversationEvents(io, socket) {
             return typeof ack === 'function' && ack({ ok: false, error: 'missing params' });
         }
 
-        // clear watcher cũ nếu có
         const old = msgWatchers.get(key);
         if (old) { clearInterval(old); msgWatchers.delete(key); }
         log.info('msg', socket.id, 'watcher reset key=%s', key);
@@ -182,24 +182,18 @@ export function registerConversationEvents(io, socket) {
             const initial = await getMessages({ pageId, token, conversationId: convoKey, customerId, count });
             log.info('msg', socket.id, 'watchStart initial fetched=%d', Array.isArray(initial) ? initial.length : -1);
 
-            // Có thể emit init nếu UI cần:
-            // socket.emit('msg:init', { pageId, conversationId: convoKey, items: initial });
-
             typeof ack === 'function' && ack({ ok: true });
 
             const timer = setInterval(async () => {
                 try {
-                    // Lấy phần mới (nếu API chỉ hỗ trợ current_count, có thể đặt count=0 và client tự dedupe)
                     const incoming = await getMessages({ pageId, token, conversationId: convoKey, customerId, count: 0 });
                     for (const m of incoming) {
                         socket.emit('msg:new', m);
-
-                        // Patch nhỏ để sidebar “nhảy lên đầu” ngay
                         socket.emit('conv:patch', {
                             pageId,
                             type: 'upsert',
                             items: [{
-                                id: `${pageId}_${convoKey}`, // khớp id client đang dùng
+                                id: `${pageId}_${convoKey}`,
                                 type: 'INBOX',
                                 snippet: (m?.original_message || m?.message || '').toString().slice(0, 100),
                                 updated_at: m?.inserted_at || new Date().toISOString(),
@@ -225,7 +219,6 @@ export function registerConversationEvents(io, socket) {
         if (!pageId || !conversationId) {
             return typeof ack === 'function' && ack({ ok: false, error: 'missing params' });
         }
-        // Client có thể gửi full id ({pageId}_{convoKey}) → normalize lại để khớp key
         const convoKey = extractConvoKey(conversationId);
         const key = watcherKey(socket.id, pageId, convoKey);
         const timer = msgWatchers.get(key);
