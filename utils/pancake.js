@@ -1,8 +1,6 @@
 // utils/pancake.js
 // Gom URL builder + fetch JSON Pancake
 
-// Node >=18 có global fetch
-
 function buildConvListURL({ pageId, token, count }) {
     const base = `https://pancake.vn/api/v1/pages/${pageId}/conversations`;
     const qs = new URLSearchParams({
@@ -53,6 +51,7 @@ async function getJson(url) {
 export async function getConversations({ pageId, token, current_count }) {
     const url = buildConvListURL({ pageId, token, count: current_count });
     const data = await getJson(url);
+    
     return Array.isArray(data?.conversations) ? data.conversations : [];
 }
 
