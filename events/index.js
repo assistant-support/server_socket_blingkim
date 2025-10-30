@@ -4,8 +4,12 @@
 // ------------------------------------------------------------
 
 import { registerConversationEvents } from './conversations.handler.js';
+import { registerCallEvents } from './call.handler.js';
 
 export function registerEventHandlers(io, socket) {
-    // Có thể đăng ký thêm các nhóm khác tại đây (notifications, typing, v.v.)
+    // Đăng ký conversation events
     registerConversationEvents(io, socket);
+    
+    // Đăng ký call events
+    registerCallEvents(io, socket);
 }

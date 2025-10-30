@@ -1,6 +1,8 @@
 // utils/pancake.js
 // Gom URL builder + fetch JSON Pancake
 
+// Node >=18 có global fetch
+
 function buildConvListURL({ pageId, token, count }) {
     const base = `https://pancake.vn/api/v1/pages/${pageId}/conversations`;
     const qs = new URLSearchParams({
@@ -19,7 +21,15 @@ function buildConvListURL({ pageId, token, count }) {
 }
 
 function buildMessagesURL({ pageId, conversationId, customerId, token, count = 0 }) {
-    const base = `https://pancake.vn/api/v1/pages/${pageId}/conversations/${pageId}_${conversationId}/messages`;
+    // Đặc biệt xử lý cho TikTok: sử dụng conversation ID đầy đủ
+    let conversationPath;
+    if (conversationId.startsWith('ttm_')) {
+        conversationPath = conversationId; // TikTok: sử dụng conversation ID đầy đủ
+    } else {
+        conversationPath = `${pageId}_${conversationId}`; // Facebook/Instagram: ghép pageId + conversationId
+    }
+    
+    const base = `https://pancake.vn/api/v1/pages/${pageId}/conversations/${conversationPath}/messages`;
     const qs = new URLSearchParams({
         access_token: token,
         is_new_api: 'true',
@@ -51,7 +61,6 @@ async function getJson(url) {
 export async function getConversations({ pageId, token, current_count }) {
     const url = buildConvListURL({ pageId, token, count: current_count });
     const data = await getJson(url);
-    
     return Array.isArray(data?.conversations) ? data.conversations : [];
 }
 

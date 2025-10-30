@@ -32,6 +32,13 @@ const watcherKey = (socketId, pageId, convoKey) => `${socketId}|${pageId}|${conv
 const extractConvoKey = (cid) => {
     if (!cid) return cid;
     const s = String(cid);
+    
+    // Đặc biệt xử lý cho TikTok: sử dụng conversation ID đầy đủ
+    if (s.startsWith('ttm_')) {
+        return s; // Trả về conversation ID đầy đủ cho TikTok
+    }
+    
+    // Xử lý bình thường cho Facebook/Instagram
     const i = s.indexOf('_');
     return i >= 0 ? s.slice(i + 1) : s;
 };
@@ -141,7 +148,7 @@ export function registerConversationEvents(io, socket) {
 
     // ===== Messages =====
     socket.on('msg:get', async (params, ack) => {
-        console.log(params, ack);
+        // console.log(params, ack);
 
         const { pageId, token, conversationId, customerId } = params || {};
         let { count } = params || {};
@@ -189,16 +196,21 @@ export function registerConversationEvents(io, socket) {
                     const incoming = await getMessages({ pageId, token, conversationId: convoKey, customerId, count: 0 });
                     for (const m of incoming) {
                         socket.emit('msg:new', m);
-                        socket.emit('conv:patch', {
-                            pageId,
-                            type: 'upsert',
-                            items: [{
-                                id: `${pageId}_${convoKey}`,
-                                type: 'INBOX',
-                                snippet: (m?.original_message || m?.message || '').toString().slice(0, 100),
-                                updated_at: m?.inserted_at || new Date().toISOString(),
-                            }],
-                        });
+                        
+                        // Chỉ emit conv:patch nếu có customer data đầy đủ
+                        if (m?.customers && Array.isArray(m.customers) && m.customers.length > 0) {
+                            socket.emit('conv:patch', {
+                                pageId,
+                                type: 'upsert',
+                                items: [{
+                                    id: `${pageId}_${convoKey}`,
+                                    type: 'INBOX',
+                                    snippet: (m?.original_message || m?.message || '').toString().slice(0, 100),
+                                    updated_at: m?.inserted_at || new Date().toISOString(),
+                                    customers: m.customers, // Thêm customer data
+                                }],
+                            });
+                        }
                     }
                     log.debug('msg', socket.id, 'poll tick incoming=%d key=%s', Array.isArray(incoming) ? incoming.length : -1, key);
                 } catch (e) {
