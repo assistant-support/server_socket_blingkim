@@ -21,12 +21,22 @@ function buildConvListURL({ pageId, token, count }) {
 }
 
 function buildMessagesURL({ pageId, conversationId, customerId, token, count = 0 }) {
-    // Đặc biệt xử lý cho TikTok: sử dụng conversation ID đầy đủ
+    const cid = String(conversationId);
     let conversationPath;
-    if (conversationId.startsWith('ttm_')) {
-        conversationPath = conversationId; // TikTok: sử dụng conversation ID đầy đủ
+    
+    // ✅ Kiểm tra prefix để xử lý đúng format cho từng platform
+    if (cid.startsWith('ttm_') || cid.startsWith('pzl_') || cid.startsWith('igo_')) {
+        // TikTok, Zalo, Instagram Official: sử dụng conversation ID đầy đủ
+        // Ví dụ: "pzl_12345_67890" → giữ nguyên "pzl_12345_67890"
+        conversationPath = cid;
+    } else if (cid.includes('_') && cid.split('_').length >= 2) {
+        // Facebook: đã có format "pageId_customerId" → giữ nguyên
+        // Ví dụ: "140918602777989_123456789" → giữ nguyên
+        conversationPath = cid;
     } else {
-        conversationPath = `${pageId}_${conversationId}`; // Facebook/Instagram: ghép pageId + conversationId
+        // Facebook: chỉ có customerId → ghép với pageId
+        // Ví dụ: "123456789" → "140918602777989_123456789"
+        conversationPath = `${pageId}_${cid}`;
     }
     
     const base = `https://pancake.vn/api/v1/pages/${pageId}/conversations/${conversationPath}/messages`;

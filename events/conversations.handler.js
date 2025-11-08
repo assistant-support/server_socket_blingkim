@@ -33,12 +33,14 @@ const extractConvoKey = (cid) => {
     if (!cid) return cid;
     const s = String(cid);
     
-    // Đặc biệt xử lý cho TikTok: sử dụng conversation ID đầy đủ
-    if (s.startsWith('ttm_')) {
-        return s; // Trả về conversation ID đầy đủ cho TikTok
+    // ✅ Đặc biệt xử lý cho TikTok và Zalo: sử dụng conversation ID đầy đủ
+    // TikTok: "ttm_..."
+    // Zalo: "pzl_..." hoặc "igo_..." (Instagram Official)
+    if (s.startsWith('ttm_') || s.startsWith('pzl_') || s.startsWith('igo_')) {
+        return s; // Trả về conversation ID đầy đủ
     }
     
-    // Xử lý bình thường cho Facebook/Instagram
+    // Xử lý bình thường cho Facebook/Instagram (format: pageId_customerId)
     const i = s.indexOf('_');
     return i >= 0 ? s.slice(i + 1) : s;
 };
