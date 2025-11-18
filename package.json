@@ -5,7 +5,6 @@
   "description": "Production-ready Socket.IO server",
   "main": "server.js",
   "scripts": {
-    "build": "node -e \"console.log('No build step required for this project.')\"",
     "dev": "nodemon server.js",
     "start": "node server.js"
   },
