@@ -1,6 +1,7 @@
 {
   "name": "production-socket-server",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "description": "Production-ready Socket.IO server",
   "main": "server.js",
@@ -12,12 +13,12 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "http-proxy-agent": "^7.0.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.0",
-    "socket.io": "^4.7.5",
-    "http-proxy-agent": "^7.0.2",
     "node-fetch": "^3.3.2",
-    "zca-js": "^2.0.1"
+    "socket.io": "^4.7.5",
+    "zca-js": "^2.0.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

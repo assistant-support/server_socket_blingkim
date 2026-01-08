@@ -18,6 +18,8 @@ export const CORS_ORIGINS = read('CORS_ORIGINS', 'http://localhost:3000')
     .map(s => s.trim())
     .filter(Boolean)
 
+export const MongoDB_URI = read('MongoDB_URI') || read('MONGODB_URI') || read('MONGO_URI') || read('MONGODB_URL') || read('DATABASE_URL')
+
 // Kiểm tra biến bắt buộc
 const required = {
     AUTH_SECRET,

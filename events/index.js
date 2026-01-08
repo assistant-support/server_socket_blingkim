@@ -5,6 +5,7 @@
 
 import { registerConversationEvents } from './conversations.handler.js';
 import { registerCallEvents } from './call.handler.js';
+import { registerZaloEvents } from './zalo.handler.js';
 
 export function registerEventHandlers(io, socket) {
     // Đăng ký conversation events
@@ -12,4 +13,7 @@ export function registerEventHandlers(io, socket) {
     
     // Đăng ký call events
     registerCallEvents(io, socket);
+    
+    // Đăng ký zalo events
+    registerZaloEvents(io, socket);
 }
